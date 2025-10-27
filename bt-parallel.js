@@ -1,7 +1,7 @@
 module.exports = function(RED) {
     "use strict";
 
-    function BTParallelNode(config) {
+    return function BTParallelNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
 
@@ -155,7 +155,4 @@ module.exports = function(RED) {
             node.status({});
         });
     }
-
-    // 注册节点类型
-    RED.nodes.registerType('bt-parallel', BTParallelNode);
 };

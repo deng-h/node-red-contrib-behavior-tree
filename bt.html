@@ -1,3 +1,4 @@
+<!-- 并行节点 -->
 <script type="text/html" data-template-name="bt-parallel">
     <!-- 节点配置表单 -->
     <div class="form-row">
@@ -116,7 +117,7 @@
     });
 </script>
 
-<!-- 节点配置表单 -->
+<!-- 重复节点 -->
 <script type="text/html" data-template-name="bt-repeat">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> 名称</label>
@@ -149,7 +150,6 @@
     </div>
 </script>
 
-<!-- 帮助信息 -->
 <script type="text/html" data-help-name="bt-repeat">
     <p>行为树重复节点（bt-repeat）：按配置重复执行子节点。</p>
     <h3>核心功能</h3>
@@ -189,7 +189,6 @@ global.set('repeat_result', {
     </p>
 </script>
 
-<!-- 节点注册 -->
 <script type="text/javascript">
     RED.nodes.registerType('bt-repeat', {
         category: 'behaviors',
@@ -212,6 +211,7 @@ global.set('repeat_result', {
     });
 </script>
 
+<!-- 序列节点 -->
 <script type="text/html" data-template-name="bt-sequence">
     <!-- 节点配置表单 -->
     <div class="form-row">
@@ -312,7 +312,7 @@ global.set('repeat_result', {
     });
 </script>
 
-<!-- 节点配置对话框 -->
+<!-- 延迟节点 -->
 <script type="text/html" data-template-name="bt-sleep">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> 名称</label>
@@ -328,7 +328,6 @@ global.set('repeat_result', {
     </div>
 </script>
 
-<!-- 节点帮助信息  -->
 <script type="text/html" data-help-name="bt-sleep">
     <p>带实时倒计时的延迟节点，优先读取参数内容，若内容没有值则读取配置的延迟时间</p>
     <p>接收消息后，会显示实时剩余秒数，延迟指定时间后输出消息</p>
@@ -342,7 +341,6 @@ global.set('repeat_result', {
     <p>会实时更新剩余倒计时时间，以秒为单位显示</p>
 </script>
 
-<!-- 节点外观定义 -->
 <script type="text/javascript">
     RED.nodes.registerType('bt-sleep', {
         category: 'behaviors',
