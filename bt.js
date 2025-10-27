@@ -11,7 +11,7 @@ module.exports = function (RED) {
 
   // 注册所有节点类型
   RED.nodes.registerType("bt-repeat", BtRepeatNode);
-  RED.nodes.registerType("bt-sequence", BtSequenceNode);
-  RED.nodes.registerType("bt-parallel", BtParallelNode);
-  RED.nodes.registerType("bt-sleep", BtSleepNode);
+//   RED.nodes.registerType("bt-sequence", BtSequenceNode);
+//   RED.nodes.registerType("bt-parallel", BtParallelNode);
+//   RED.nodes.registerType("bt-sleep", BtSleepNode);
 };

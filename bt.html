@@ -1,0 +1,372 @@
+<script type="text/html" data-template-name="bt-parallel">
+    <!-- 节点配置表单 -->
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> 名称</label>
+        <input type="text" id="node-input-name" placeholder="并行节点">
+    </div>
+    
+    <div class="form-row">
+        <label>子节点管理</label>
+        <button class="btn btn-xs" id="add-child"><i class="fa fa-plus"></i> 添加子节点</button>
+        <button class="btn btn-xs" id="remove-child"><i class="fa fa-minus"></i> 移除子节点</button>
+        <span class="form-tip" style="margin-left:10px;">当前: <span id="child-count">1</span> 个</span>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-completionType"><i class="fa fa-check-square-o"></i> 完成条件</label>
+        <select id="node-input-completionType">
+            <option value="all_success">所有子节点成功</option>
+            <option value="any_success">任一子节点成功</option>
+            <option value="all_complete">所有子节点完成</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-globalKey"><i class="fa fa-globe"></i> 全局状态键名</label>
+        <input type="text" id="node-input-globalKey" value="parallel_status" placeholder="全局变量键名">
+    </div>
+    <div class="form-row">
+        <label for="node-input-childKey"><i class="fa fa-globe"></i> 子状态键名</label>
+        <input type="text" id="node-input-childKey" value="child_result" placeholder="子状态键名">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="bt-parallel">
+    <p>行为树并行节点（parallel_node）：同时执行多个子节点，根据配置的完成条件判断整体结果。</p>
+    <h3>配置项</h3>
+    <ul>
+        <li><strong>子节点数量</strong>：并行执行的子节点个数（输出端口数量）</li>
+        <li><strong>完成条件</strong>：
+            <ul>
+                <li>子节点状态包含：success，failure</li>
+                <li>所有子节点成功：全部子节点返回 success 才成功</li>
+                <li>任一子节点成功：有一个子节点返回 success 即成功</li>
+                <li>所有子节点完成：等待所有子节点结束，有成功则整体成功</li>
+            </ul>
+        </li>
+        <li><strong>全局状态键名</strong>：用于存储子节点状态的全局变量键名</li>
+    </ul>
+
+    <h3>消息格式要求</h3>
+    <p><strong>子节点输入</strong>：任意格式消息</p>
+    <p><strong>子节点输出</strong>：必须包含状态字段
+        <pre>global.{$全局状态键名} = {
+            type: "parallel",
+            status: "success",  父节点状态，无需配置
+            child_status: ["success"] 子节点状态，第几个子节点就配置第几个参数状态
+        }</pre>
+    </p>
+</script>
+
+<script type="text/javascript">
+    // 注册节点外观定义
+    RED.nodes.registerType('bt-parallel', {
+        category: 'behaviors', // 节点分类（功能区）
+        color: '#ffa500',     // 节点背景色
+        defaults: {
+            name: { value: "" },
+            outputs: { value: 1 },
+            completionType: { value: "all_success" },
+            globalKey: { value: "parallel_result" },
+            childKey: { value: "child_result" }        // 全局状态键名
+        },
+        inputs: 1,              // 输入端口数
+        outputs: 1,             // 输出端口数（动态）
+        icon: "parallel.svg", // 节点图标（可自定义）
+        label: function() {
+            return this.name || "parallel"; // 节点显示名称
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "parallel",
+        
+        oneditprepare: function() {
+            const node = this;
+            
+            // 显示当前子节点数量
+            function updateChildCount() {
+                $('#child-count').text(node.outputs);
+            }
+            
+            // 添加子节点端口
+            $('#add-child').click(function() {
+                node.outputs++;
+                updateChildCount();
+                RED.nodes.eachNode(n => {
+                    if (n.id === node.id) n.outputs = node.outputs;
+                });
+                $(node).trigger('change');
+            });
+            
+            // 移除子节点端口（至少保留1个）
+            $('#remove-child').click(function() {
+                if (node.outputs > 1) {
+                    node.outputs--;
+                    updateChildCount();
+                    RED.nodes.eachNode(n => {
+                        if (n.id === node.id) n.outputs = node.outputs;
+                    });
+                    $(node).trigger('change');
+                }
+            });
+            
+            // 初始化显示
+            updateChildCount();
+        }
+    });
+</script>
+
+<!-- 节点配置表单 -->
+<script type="text/html" data-template-name="bt-repeat">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> 名称</label>
+        <input type="text" id="node-input-name" placeholder="重复节点">
+    </div>
+    <div class="form-row">
+        <label for="node-input-repeatCount"><i class="fa fa-repeat"></i> 重复次数</label>
+        <input type="number" id="node-input-repeatCount" min="1" value="3" placeholder="默认3次">
+    </div>
+    <div class="form-row">
+        <label for="node-input-globalRepeatCount"><i class="fa fa-globe"></i> 重复次数参数</label>
+        <input type="text" id="node-input-globalRepeatCount" value="repeat_count" placeholder="从全局变量获取次数">
+    </div>
+    <!-- 修改：将复选框改为下拉菜单 -->
+    <div class="form-row">
+        <label for="node-input-terminationCondition"><i class="fa fa-signal"></i> 终止条件</label>
+        <select id="node-input-terminationCondition">
+            <option value="fixed">固定次数</option>
+            <option value="untilSuccess">直到成功</option>
+            <option value="exitOnFailure">失败即退出</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-globalKey"><i class="fa fa-globe"></i> 全局状态键名</label>
+        <input type="text" id="node-input-globalKey" value="repeat_result" placeholder="全局变量键名">
+    </div>
+    <div class="form-row">
+        <label for="node-input-childKey"><i class="fa fa-child"></i> 子状态键名</label>
+        <input type="text" id="node-input-childKey" value="child_result" placeholder="子节点状态键名">
+    </div>
+</script>
+
+<!-- 帮助信息 -->
+<script type="text/html" data-help-name="bt-repeat">
+    <p>行为树重复节点（bt-repeat）：按配置重复执行子节点。</p>
+    <h3>核心功能</h3>
+    <ul>
+        <li>重复执行单个子节点，每次执行完成后检查结果</li>
+        <li>支持三种终止条件：固定次数、直到成功、失败即退出</li>
+        <li>可通过全局参数动态配置重复次数</li>
+    </ul>
+    <h3>配置项说明</h3>
+    <ul>
+        <li><strong>重复次数</strong>：默认执行的次数（至少1次）</li>
+        <li><strong>重复次数参数</strong>：从全局变量获取次数，优先级高于固定配置</li>
+        <li><strong>终止条件</strong>：
+            <ul>
+                <li><strong>固定次数</strong>：执行指定次数后停止</li>
+                <li><strong>直到成功</strong>：直到子节点返回成功才停止</li>
+                <li><strong>失败即退出</strong>：一旦子节点失败，立即停止</li>
+            </ul>
+        </li>
+        <li><strong>全局状态键名</strong>：用于父节点与子节点通信的全局变量</li>
+    </ul>
+    <h3>子节点交互</h3>
+    <p>子节点完成后，必须更新全局状态：
+        <pre>
+// 成功时
+global.set('repeat_result', {
+    ...global.get('repeat_result'),
+    child_status: "success" 
+});
+
+// 失败时
+global.set('repeat_result', {
+    ...global.get('repeat_result'),
+    child_status: "failure" 
+});
+        </pre>
+    </p>
+</script>
+
+<!-- 节点注册 -->
+<script type="text/javascript">
+    RED.nodes.registerType('bt-repeat', {
+        category: 'behaviors',
+        color: '#f0e68c',
+        defaults: {
+            name: { value: "" },
+            repeatCount: { value: 3, validate: v => v >= 1 },
+            globalRepeatCount: { value: "repeat_count" },
+            terminationCondition: { value: "fixed" }, // 新增
+            globalKey: { value: "repeat_result" },
+            childKey: { value: "child_result" }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "loop.svg",
+        label: function() {
+            return this.name || `repeat`;
+        },
+        paletteLabel: "repeat"
+    });
+</script>
+
+<script type="text/html" data-template-name="bt-sequence">
+    <!-- 节点配置表单 -->
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> 名称</label>
+        <input type="text" id="node-input-name" placeholder="序列节点">
+    </div>
+    <div class="form-row">
+        <label>子节点管理</label>
+        <button class="btn btn-xs" id="add-child"><i class="fa fa-plus"></i> 添加子节点</button>
+        <button class="btn btn-xs" id="remove-child"><i class="fa fa-minus"></i> 移除子节点</button>
+        <span class="form-tip" style="margin-left:10px;">当前: <span id="child-count">1</span> 个</span>
+    </div>
+    <div class="form-row">
+        <label for="node-input-globalKey"><i class="fa fa-globe"></i> 全局状态键名</label>
+        <input type="text" id="node-input-globalKey" value="sequence_result" placeholder="全局变量键名">
+    </div>
+    <div class="form-row">
+        <label for="node-input-childKey"><i class="fa fa-globe"></i> 子状态键名</label>
+        <input type="text" id="node-input-childKey" value="child_result" placeholder="子状态键名">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="bt-sequence">
+    <p>行为树序列节点（bt-sequence）：按顺序执行子节点，只有当前子节点成功才会执行下一个，任何子节点失败则整体失败。</p>
+    <h3>核心功能</h3>
+    <ul>
+        <li>按索引顺序依次执行子节点（从0开始）</li>
+        <li>当前子节点执行成功后，自动执行下一个子节点</li>
+        <li>任何子节点执行失败，立即终止序列并返回失败</li>
+        <li>所有子节点执行成功，整体返回成功</li>
+    </ul>
+    <h3>配置项说明</h3>
+    <ul>
+        <li><strong>子节点数量</strong>：需要按顺序执行的子节点个数（输出端口数量）</li>
+        <li><strong>全局状态键名</strong>：用于存储执行状态的全局变量键名，子节点需通过此键更新状态</li>
+    </ul>
+    <h3>子节点交互</h3>
+    <p>子节点执行完成后，需将结果写入全局状态：</p>
+    <pre>const globalState = node.context().global.get('sequence_result');
+            globalState.child_status = "success"; // 或 "failure"
+            node.context().global.set('sequence_result', globalState);</pre>
+</script>
+
+<script type="text/javascript">
+    // 注册节点外观定义
+    RED.nodes.registerType('bt-sequence', {
+        category: 'behaviors',  // 节点分类（功能区）
+        color: '#87cefa',      // 节点背景色（浅蓝色）
+        defaults: {
+            name: { value: "" },
+            outputs: { value:1 },  // 子节点数量（至少1个）
+            globalKey: { value: "sequence_result" },      // 全局状态键名
+            childKey: { value: "child_result" }        // 全局状态键名
+        },
+        inputs: 1,              // 输入端口数
+        outputs: 1,  // 输出端口数（动态）
+        icon: "sequence.svg",   // 节点图标（可自定义序列图标）
+        label: function() {
+            return this.name || `sequence`;  // 节点显示名称
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "sequence",
+        oneditprepare: function() {
+            const node = this;
+            
+            // 显示当前子节点数量
+            function updateChildCount() {
+                $('#child-count').text(node.outputs);
+            }
+            
+            // 添加子节点端口
+            $('#add-child').click(function() {
+                node.outputs++;
+                updateChildCount();
+                RED.nodes.eachNode(n => {
+                    if (n.id === node.id) n.outputs = node.outputs;
+                });
+                $(node).trigger('change');
+            });
+            
+            // 移除子节点端口（至少保留1个）
+            $('#remove-child').click(function() {
+                if (node.outputs > 1) {
+                    node.outputs--;
+                    updateChildCount();
+                    RED.nodes.eachNode(n => {
+                        if (n.id === node.id) n.outputs = node.outputs;
+                    });
+                    $(node).trigger('change');
+                }
+            });
+            
+            // 初始化显示
+            updateChildCount();
+        }
+    });
+</script>
+
+<!-- 节点配置对话框 -->
+<script type="text/html" data-template-name="bt-sleep">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> 名称</label>
+        <input type="text" id="node-input-name" placeholder="名称">
+    </div>
+    <div class="form-row">
+        <label for="node-input-delayTime"><i class="fa fa-clock-o"></i> 延迟时间(毫秒)</label>
+        <input type="number" id="node-input-delayTime" placeholder="2000" min="1000" step="1000">
+    </div>
+    <div class="form-row">
+        <label for="node-input-globalKey"><i class="fa fa-globe"></i> 延迟时间参数(毫秒)</label>
+        <input type="text" id="node-input-globalKey" value="delay_time" placeholder="延迟时间参数">
+    </div>
+</script>
+
+<!-- 节点帮助信息  -->
+<script type="text/html" data-help-name="bt-sleep">
+    <p>带实时倒计时的延迟节点，优先读取参数内容，若内容没有值则读取配置的延迟时间</p>
+    <p>接收消息后，会显示实时剩余秒数，延迟指定时间后输出消息</p>
+    <h3>配置项</h3>
+    <ul>
+        <li><strong>名称</strong>：节点的显示名称</li>
+        <li><strong>延迟时间</strong>：消息延迟的毫秒数（建议设置为1000的倍数）</li>
+        <li><strong>延迟时间参数</strong>：通过全局参数配置的毫秒数（优先使用，建议设置为1000的倍数）</li>
+    </ul>
+    <h3>特点</h3>
+    <p>会实时更新剩余倒计时时间，以秒为单位显示</p>
+</script>
+
+<!-- 节点外观定义 -->
+<script type="text/javascript">
+    RED.nodes.registerType('bt-sleep', {
+        category: 'behaviors',
+        color: '#a6bbcf',
+        icon: "nodered/delay.svg",
+        defaults: {
+            name: {value: ""},
+            delayTime: {value: 2000, validate: function(v) { return v >= 1000; }},
+            globalKey: { value: "delay_time" },      // 全局状态键名
+        },
+        inputs: 1,
+        outputs: 1,
+        label: function() {
+            return this.name || "sleep";
+        },
+        paletteLabel: "sleep",
+        oneditprepare: function() {
+            // 确保输入为有效的正整数
+            $('#node-input-delayTime').on('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                if (this.value === '' || this.value < 1000) {
+                    this.value = 1000;
+                }
+            });
+        }
+    });
+</script>
