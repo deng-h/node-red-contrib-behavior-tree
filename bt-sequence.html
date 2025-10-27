@@ -1,0 +1,99 @@
+<script type="text/html" data-template-name="bt-sequence">
+    <!-- 节点配置表单 -->
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> 名称</label>
+        <input type="text" id="node-input-name" placeholder="序列节点">
+    </div>
+    <div class="form-row">
+        <label>子节点管理</label>
+        <button class="btn btn-xs" id="add-child"><i class="fa fa-plus"></i> 添加子节点</button>
+        <button class="btn btn-xs" id="remove-child"><i class="fa fa-minus"></i> 移除子节点</button>
+        <span class="form-tip" style="margin-left:10px;">当前: <span id="child-count">1</span> 个</span>
+    </div>
+    <div class="form-row">
+        <label for="node-input-globalKey"><i class="fa fa-globe"></i> 全局状态键名</label>
+        <input type="text" id="node-input-globalKey" value="sequence_result" placeholder="全局变量键名">
+    </div>
+    <div class="form-row">
+        <label for="node-input-childKey"><i class="fa fa-globe"></i> 子状态键名</label>
+        <input type="text" id="node-input-childKey" value="child_result" placeholder="子状态键名">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="bt-sequence">
+    <p>行为树序列节点（bt-sequence）：按顺序执行子节点，只有当前子节点成功才会执行下一个，任何子节点失败则整体失败。</p>
+    <h3>核心功能</h3>
+    <ul>
+        <li>按索引顺序依次执行子节点（从0开始）</li>
+        <li>当前子节点执行成功后，自动执行下一个子节点</li>
+        <li>任何子节点执行失败，立即终止序列并返回失败</li>
+        <li>所有子节点执行成功，整体返回成功</li>
+    </ul>
+    <h3>配置项说明</h3>
+    <ul>
+        <li><strong>子节点数量</strong>：需要按顺序执行的子节点个数（输出端口数量）</li>
+        <li><strong>全局状态键名</strong>：用于存储执行状态的全局变量键名，子节点需通过此键更新状态</li>
+    </ul>
+    <h3>子节点交互</h3>
+    <p>子节点执行完成后，需将结果写入全局状态：</p>
+    <pre>const globalState = node.context().global.get('sequence_result');
+            globalState.child_status = "success"; // 或 "failure"
+            node.context().global.set('sequence_result', globalState);</pre>
+</script>
+
+<script type="text/javascript">
+    // 注册节点外观定义
+    RED.nodes.registerType('bt-sequence', {
+        category: 'behaviors',  // 节点分类（功能区）
+        color: '#87cefa',      // 节点背景色（浅蓝色）
+        defaults: {
+            name: { value: "" },
+            outputs: { value:1 },  // 子节点数量（至少1个）
+            globalKey: { value: "sequence_result" },      // 全局状态键名
+            childKey: { value: "child_result" }        // 全局状态键名
+        },
+        inputs: 1,              // 输入端口数
+        outputs: 1,  // 输出端口数（动态）
+        icon: "sequence.svg",   // 节点图标（可自定义序列图标）
+        label: function() {
+            return this.name || `sequence`;  // 节点显示名称
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "sequence",
+        oneditprepare: function() {
+            const node = this;
+            
+            // 显示当前子节点数量
+            function updateChildCount() {
+                $('#child-count').text(node.outputs);
+            }
+            
+            // 添加子节点端口
+            $('#add-child').click(function() {
+                node.outputs++;
+                updateChildCount();
+                RED.nodes.eachNode(n => {
+                    if (n.id === node.id) n.outputs = node.outputs;
+                });
+                $(node).trigger('change');
+            });
+            
+            // 移除子节点端口（至少保留1个）
+            $('#remove-child').click(function() {
+                if (node.outputs > 1) {
+                    node.outputs--;
+                    updateChildCount();
+                    RED.nodes.eachNode(n => {
+                        if (n.id === node.id) n.outputs = node.outputs;
+                    });
+                    $(node).trigger('change');
+                }
+            });
+            
+            // 初始化显示
+            updateChildCount();
+        }
+    });
+</script>
