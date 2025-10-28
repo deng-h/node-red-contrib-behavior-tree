@@ -1,7 +1,7 @@
 module.exports = function(RED) {
     "use strict";
 
-    return function BTParallelNode(config) {
+    function BTParallelNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
 
@@ -155,4 +155,6 @@ module.exports = function(RED) {
             node.status({});
         });
     }
+    
+    RED.nodes.registerType("bt-parallel", BTParallelNode);
 };

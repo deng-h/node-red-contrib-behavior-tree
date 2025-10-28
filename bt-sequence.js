@@ -1,7 +1,7 @@
 module.exports = function(RED) {
     "use strict";
 
-    return function BTSequenceNode(config) {
+    function BTSequenceNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
 
@@ -197,4 +197,6 @@ module.exports = function(RED) {
             node.status({});
         });
     }
+    
+    RED.nodes.registerType("bt-sequence", BTSequenceNode);
 };

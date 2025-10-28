@@ -1,5 +1,5 @@
 module.exports = function(RED) {
-    return function BTSleepNode(config) {
+    function BTSleepNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
         
@@ -80,4 +80,6 @@ module.exports = function(RED) {
             node.status({}); // 清除状态显示
         });
     }
+    
+    RED.nodes.registerType("bt-sleep", BTSleepNode);
 };

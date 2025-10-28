@@ -10,7 +10,7 @@ module.exports = function(RED) {
      * 行为树重复节点构造函数
      * @param {Object} config - 节点配置对象
      */
-    return function BTRepeatNode(config) {
+    function BTRepeatNode(config) {
         RED.nodes.createNode(this, config);
         const node = this;
 
@@ -331,4 +331,6 @@ module.exports = function(RED) {
             node.status({});
         });
     }
+    
+    RED.nodes.registerType("bt-repeat", BTRepeatNode);
 };
